@@ -13,6 +13,8 @@ It's here so I can track what I've built, audit what's working, and have a refer
 | File | Description |
 |---|---|
 | `infrastructure-status.md` | Point-in-time audit of the full setup — component inventory, health by layer, known gaps |
+| `claude-memory-explainer.md` | Point-in-time audit of the full documentation setup — why, wha,t how  |
+
 
 ## How to read the audit
 
