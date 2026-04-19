@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "workspaceRoot": ".",
+  "reportDirectory": "reports/ops",
+  "latestReportPath": "reports/ops/latest.md",
+  "dryRun": true,
+  "cleanup": {
+    "enabled": true,
+    "junkFileNames": [
+      ".DS_Store",
+      "Thumbs.db"
+    ],
+    "tempFileExtensions": [
+      ".tmp",
+      ".swp",
+      ".bak",
+      ".orig"
+    ],
+    "includeDirectories": [
+      ".",
+      ".pi"
+    ],
+    "excludeDirectories": [
+      ".git",
+      "node_modules",
+      "reports/ops"
+    ]
+  },
+  "organization": {
+    "enabled": true,
+    "onlyTopLevelFiles": true,
+    "includeDirectories": [
+      "."
+    ],
+    "excludeDirectories": [
+      ".git",
+      "node_modules",
+      ".pi",
+      "ops-agent",
+      "reports"
+    ],
+    "rules": [
+      {
+        "name": "Move plain logs",
+        "matchExtensions": [
+          ".log"
+        ],
+        "destinationDirectory": "logs"
+      },
+      {
+        "name": "Move temporary exports",
+        "matchFileNames": [
+          "export.csv",
+          "report.csv"
+        ],
+        "destinationDirectory": "data/exports"
+      }
+    ]
+  },
+  "status": {
+    "trackedDocs": [
+      "infrastructure-status-v1.1.md",
+      "MEMORY-AUDIT-2026-03-26.md",
+      "claude-memory-explainer.md"
+    ]
+  }
+}

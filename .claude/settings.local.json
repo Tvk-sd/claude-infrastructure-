@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/Till/.claude/plugins/**)",
+      "Read(//Users/Till/Documents/**)"
+    ]
+  }
+}

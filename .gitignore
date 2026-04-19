@@ -1,0 +1,4 @@
+node_modules/
+reports/ops/*.log
+reports/ops/latest.md
+reports/ops/ops-status-*.md
