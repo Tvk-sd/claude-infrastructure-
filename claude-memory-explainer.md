@@ -12,15 +12,17 @@ Claude forgets everything when a session ends. By default, every new conversatio
 
 ## The full memory stack
 
-| Layer | File | Who writes | When loaded |
-|---|---|---|---|
-| Global instructions | `~/.claude/CLAUDE.md` | You | Every session |
-| Global knowledge | `~/.claude/memory/general.md` | Claude | On demand |
-| Domain knowledge | `~/.claude/memory/domain.md` | Claude (you flag) | On demand |
-| Auto-memory index | `~/.claude/projects/.../MEMORY.md` | Claude | Every session |
-| Auto-memory files | `feedback_build_process.md` etc. | Claude | On demand |
-| Project briefing | `ProjectFolder/CLAUDE.md` | You | When in that project |
-| Project state | `ProjectFolder/HANDOFF.md` | Claude + you | When in that project |
+
+| Layer               | File                               | Who writes        | When loaded          |
+| ------------------- | ---------------------------------- | ----------------- | -------------------- |
+| Global instructions | `~/.claude/CLAUDE.md`              | You               | Every session        |
+| Global knowledge    | `~/.claude/memory/general.md`      | Claude            | On demand            |
+| Domain knowledge    | `~/.claude/memory/domain.md`       | Claude (you flag) | On demand            |
+| Auto-memory index   | `~/.claude/projects/.../MEMORY.md` | Claude            | Every session        |
+| Auto-memory files   | `feedback_build_process.md` etc.   | Claude            | On demand            |
+| Project briefing    | `ProjectFolder/CLAUDE.md`          | You               | When in that project |
+| Project state       | `ProjectFolder/HANDOFF.md`         | Claude + you      | When in that project |
+
 
 ---
 
@@ -34,9 +36,9 @@ Claude forgets everything when a session ends. By default, every new conversatio
 
 Two Claude-maintained files at `~/.claude/memory/`:
 
-**`general.md`** — cross-project conventions, tool quirks, workflow preferences. Claude writes here automatically when something applies across all projects.
+`**general.md**` — cross-project conventions, tool quirks, workflow preferences. Claude writes here automatically when something applies across all projects.
 
-**`domain.md`** — staged domain knowledge: skills, products, projects. You trigger it with one phrase:
+`**domain.md**` — staged domain knowledge: skills, products, projects. You trigger it with one phrase:
 
 > "Add this to domain memory"
 
@@ -88,12 +90,14 @@ Don't let the build process optimise for artifacts over working behaviour...
 
 ### The 4 auto-memory types
 
-| Type | What it stores | Claude writes it when… |
-|---|---|---|
-| `user` | Who you are, preferences, environment | Learning something about the person |
-| `feedback` | How Claude should behave — corrections and confirmed approaches | You correct Claude, or an approach is validated |
-| `project` | Active work context, decisions, deadlines | You share project state or goals |
-| `reference` | Where things live in external systems | You mention a tool, board, or location |
+
+| Type        | What it stores                                                  | Claude writes it when…                          |
+| ----------- | --------------------------------------------------------------- | ----------------------------------------------- |
+| `user`      | Who you are, preferences, environment                           | Learning something about the person             |
+| `feedback`  | How Claude should behave — corrections and confirmed approaches | You correct Claude, or an approach is validated |
+| `project`   | Active work context, decisions, deadlines                       | You share project state or goals                |
+| `reference` | Where things live in external systems                           | You mention a tool, board, or location          |
+
 
 ### The write rule
 
@@ -105,9 +109,9 @@ Claude writes immediately when something non-obvious is learned — not at sessi
 
 Every project folder has two files:
 
-**`CLAUDE.md`** — the standing brief. Rules, stack decisions, design constraints. Written by you. Loaded every time Claude opens that folder.
+`**CLAUDE.md**` — the standing brief. Rules, stack decisions, design constraints. Written by you. Loaded every time Claude opens that folder.
 
-**`HANDOFF.md`** — live session state. What's done, what's next, why decisions were made. Updated each session. Lets you resume cleanly days or weeks later.
+`**HANDOFF.md**` — live session state. What's done, what's next, why decisions were made. Updated each session. Lets you resume cleanly days or weeks later.
 
 ```
 ProjectFolder/
@@ -121,13 +125,15 @@ ProjectFolder/
 
 Paweł Huryn's popular method uses a flat `memory.md` with `date / what / why` entries — written manually or by prompting Claude explicitly.
 
-| | Huryn's approach | Auto-memory | Global knowledge | CLAUDE.md + HANDOFF.md |
-|---|---|---|---|---|
-| **Who writes** | You (manually) | Claude (automatically) | Claude (you flag) | You + Claude |
-| **Format** | Flat text | Typed frontmatter | Flat markdown | Free-form markdown |
-| **Scope** | Wherever you put it | Per working directory | Global | Per project folder |
-| **Portability** | Shareable via GitHub | Local only | Local only | Travels with project |
-| **Best for** | Cross-surface memory | Behaviour + preferences | Cross-project knowledge | Project context + state |
+
+|                 | Huryn's approach     | Auto-memory             | Global knowledge        | CLAUDE.md + HANDOFF.md  |
+| --------------- | -------------------- | ----------------------- | ----------------------- | ----------------------- |
+| **Who writes**  | You (manually)       | Claude (automatically)  | Claude (you flag)       | You + Claude            |
+| **Format**      | Flat text            | Typed frontmatter       | Flat markdown           | Free-form markdown      |
+| **Scope**       | Wherever you put it  | Per working directory   | Global                  | Per project folder      |
+| **Portability** | Shareable via GitHub | Local only              | Local only              | Travels with project    |
+| **Best for**    | Cross-surface memory | Behaviour + preferences | Cross-project knowledge | Project context + state |
+
 
 The real difference is intent. Huryn's is about what **you** want Claude to remember. Auto-memory is about what **Claude** notices. Global knowledge is about what **you flag as significant**. CLAUDE.md + HANDOFF.md is about briefing Claude on a specific project.
 
@@ -141,3 +147,4 @@ Most well-structured setups use all four.
 - **Scoped per working directory** — auto-memory from one project doesn't bleed into another
 - **200-line index limit** — MEMORY.md is truncated after 200 lines; keep it as a pointer index, not the knowledge store itself
 - **HANDOFF.md drifts if not updated** — only as good as the last session that maintained it
+

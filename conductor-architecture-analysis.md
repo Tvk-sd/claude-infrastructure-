@@ -1,4 +1,5 @@
 # Conductor V2 — Architecture Analysis
+
 ### Should it be broken into agents and hooks?
 
 > Analysed: April 2026  
@@ -16,15 +17,17 @@ Yes — and the split is already partially visible in the code. The conductor is
 
 Reading the 850-line skill file, the conductor performs seven distinct categories of work:
 
-| Category | Examples | Should be |
-|---|---|---|
-| **PM reasoning** | Q1/Q2/Q3, opportunity framing, design feedback, Three Amigos lenses | LLM (stays in conductor/agents) |
-| **Gate enforcement** | "CRITICAL: Do NOT self-approve this gate" | Hook (deterministic) |
-| **State persistence** | Writing CONDUCTOR STATE to CLAUDE.md | Hook (deterministic) |
-| **Context monitoring** | "Check approximate conversation length after each iteration" | Hook (deterministic) |
-| **Session resume** | Read CLAUDE.md at session start, inject phase state | Hook (deterministic) |
-| **Phase routing** | Scope Zero → Specify → Design → Three Amigos → Build → Ship | Agent per phase (isolated context) |
-| **Skill invocation** | `jtbd-analysis`, `art-direction`, `deploy-checklist`, etc. | Already correct — stays as routing |
+
+| Category               | Examples                                                            | Should be                          |
+| ---------------------- | ------------------------------------------------------------------- | ---------------------------------- |
+| **PM reasoning**       | Q1/Q2/Q3, opportunity framing, design feedback, Three Amigos lenses | LLM (stays in conductor/agents)    |
+| **Gate enforcement**   | "CRITICAL: Do NOT self-approve this gate"                           | Hook (deterministic)               |
+| **State persistence**  | Writing CONDUCTOR STATE to CLAUDE.md                                | Hook (deterministic)               |
+| **Context monitoring** | "Check approximate conversation length after each iteration"        | Hook (deterministic)               |
+| **Session resume**     | Read CLAUDE.md at session start, inject phase state                 | Hook (deterministic)               |
+| **Phase routing**      | Scope Zero → Specify → Design → Three Amigos → Build → Ship         | Agent per phase (isolated context) |
+| **Skill invocation**   | `jtbd-analysis`, `art-direction`, `deploy-checklist`, etc.          | Already correct — stays as routing |
+
 
 The problem: categories 2–5 are written as LLM instructions but behave deterministically when they work. When they fail, they fail silently.
 
@@ -160,6 +163,7 @@ Scope Zero is already correctly extracted as `conductor-scope-zero.md`. The patt
 Each phase has a natural context boundary. When you're in Three Amigos, you don't need Scope Zero's Q1/Q2/Q3 reasoning in context. When you're in Build, you don't need Design's wireframe review loop. The conductor currently carries all six phases in one 850-line context block — by the time you reach Build, the early phases are competing for attention.
 
 Per-phase agents give each phase:
+
 - Clean context at spawn (only phase-relevant instructions)
 - Smaller, more reliable instruction set
 - Ability to run in parallel (Stage 2 Specify while Stage 1 ships)
@@ -167,14 +171,16 @@ Per-phase agents give each phase:
 
 ### Proposed agent map
 
-| Phase | Agent name | Tools | Returns |
-|---|---|---|---|
-| Scope Zero | `pm-os:scope-zero` (exists) | Read, Grep, Glob | Gate 1 artifact |
-| Specify | `pm-os:specify` | Read, Write | Gate 2 artifact + staging |
-| Design | `pm-os:design` | Read, Write, Bash (browser open) | Gate 3 artifact + Three Amigos agenda |
-| Three Amigos | `pm-os:three-amigos` | Read, Write | Gate 4 artifact + locked contract |
-| Build | `pm-os:build` | All (full build access) | Stage 1 complete + acceptance criteria ✅ |
-| Ship | `pm-os:ship` | Read, Write, Bash | Handoff packet |
+
+| Phase        | Agent name                  | Tools                            | Returns                                  |
+| ------------ | --------------------------- | -------------------------------- | ---------------------------------------- |
+| Scope Zero   | `pm-os:scope-zero` (exists) | Read, Grep, Glob                 | Gate 1 artifact                          |
+| Specify      | `pm-os:specify`             | Read, Write                      | Gate 2 artifact + staging                |
+| Design       | `pm-os:design`              | Read, Write, Bash (browser open) | Gate 3 artifact + Three Amigos agenda    |
+| Three Amigos | `pm-os:three-amigos`        | Read, Write                      | Gate 4 artifact + locked contract        |
+| Build        | `pm-os:build`               | All (full build access)          | Stage 1 complete + acceptance criteria ✅ |
+| Ship         | `pm-os:ship`                | Read, Write, Bash                | Handoff packet                           |
+
 
 The conductor command (`/conductor`) becomes an orchestrator: read state, determine current phase, spawn the right agent, receive the gate artifact, persist state, wait for human approval, spawn next agent.
 
@@ -198,32 +204,37 @@ The orchestrator's instruction set drops from ~850 lines to ~100: phase map, age
 
 ## What Should Stay as It Is
 
-| Element | Why it stays |
-|---|---|
-| The 23 leaf skills (jtbd-analysis, art-direction, etc.) | Already correct leaf nodes — standalone and conductor-triggerable |
-| Skill routing inside phases | LLM judgment (fuzzy job → jtbd-analysis) — not deterministic |
-| PM reasoning (Q1/Q2/Q3, design feedback, Three Amigos lenses) | Core LLM value — cannot and should not be mechanized |
-| The three-file pattern (CLAUDE.md / HANDOFF.md / CONCEPT.md) | Correct, just needs deterministic writes |
-| Design path selection (A/B/C) | LLM decision with human input |
-| Worktree and delegate patterns | Already pattern-documented, work correctly |
+
+| Element                                                       | Why it stays                                                      |
+| ------------------------------------------------------------- | ----------------------------------------------------------------- |
+| The 23 leaf skills (jtbd-analysis, art-direction, etc.)       | Already correct leaf nodes — standalone and conductor-triggerable |
+| Skill routing inside phases                                   | LLM judgment (fuzzy job → jtbd-analysis) — not deterministic      |
+| PM reasoning (Q1/Q2/Q3, design feedback, Three Amigos lenses) | Core LLM value — cannot and should not be mechanized              |
+| The three-file pattern (CLAUDE.md / HANDOFF.md / CONCEPT.md)  | Correct, just needs deterministic writes                          |
+| Design path selection (A/B/C)                                 | LLM decision with human input                                     |
+| Worktree and delegate patterns                                | Already pattern-documented, work correctly                        |
+
 
 ---
 
 ## Risk: What Could Go Wrong in the Refactor
 
-| Risk | Mitigation |
-|---|---|
-| Agents spawn with insufficient context (no design contract in scope) | Orchestrator explicitly passes gate artifacts as agent prompt context |
-| Hooks fire in non-conductor sessions | Scope hooks to `SessionStart` with CONDUCTOR STATE existence check |
-| Phase agents diverge from conductor rules | Single shared rules file loaded into each agent — don't duplicate |
-| Gate state becomes inconsistent across agent handoffs | CONDUCTOR STATE is the single source of truth; hooks validate writes |
-| Parallel phase agents conflict | Worktrees already isolate branches — each worktree has its own CLAUDE.md |
+
+| Risk                                                                 | Mitigation                                                               |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Agents spawn with insufficient context (no design contract in scope) | Orchestrator explicitly passes gate artifacts as agent prompt context    |
+| Hooks fire in non-conductor sessions                                 | Scope hooks to `SessionStart` with CONDUCTOR STATE existence check       |
+| Phase agents diverge from conductor rules                            | Single shared rules file loaded into each agent — don't duplicate        |
+| Gate state becomes inconsistent across agent handoffs                | CONDUCTOR STATE is the single source of truth; hooks validate writes     |
+| Parallel phase agents conflict                                       | Worktrees already isolate branches — each worktree has its own CLAUDE.md |
+
 
 ---
 
 ## Prioritised Next Steps
 
 **High value, low effort:**
+
 1. Enhance the `SessionStart` hook to inject full CONDUCTOR STATE (not just a one-liner)
 2. Add a `Stop` hook for context pressure warnings (replace the inline instruction)
 3. Add a `PostToolUse` Write hook to validate CONDUCTOR STATE writes
@@ -237,6 +248,7 @@ The orchestrator's instruction set drops from ~850 lines to ~100: phase map, age
 7. Slim the orchestrator to ~100 lines once all phases are agents
 
 **Signals that you've succeeded:**
+
 - The "CRITICAL: Do NOT self-approve" instructions disappear from the conductor
 - The gotchas section shrinks (failures become infrastructure, not prompting)
 - Context at gate 4 (Three Amigos → Build) is under 30% instead of 60–80%
@@ -290,3 +302,4 @@ hooks/ (in ~/.claude/settings.json or .claude/settings.json)
 - Design decisions: `/Users/Till/Projects/11 -Conductor/02 Conductor V2/HANDOFF.md`
 - Concept & principles: `/Users/Till/Projects/11 -Conductor/02 Conductor V2/CONCEPT.md`
 - Hooks reference: `docs/hooks-reference.md` (this repo)
+
