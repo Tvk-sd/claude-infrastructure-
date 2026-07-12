@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tills State-System — Überblick</title>
+<style>
+  :root {
+    --bg: #fafaf8; --ink: #1a1a1a; --muted: #6b6b66; --line: #d8d8d2;
+    --till: #2563eb; --till-bg: #eff4ff; --till-line: #b6c9f5;
+    --mp: #b45309; --mp-bg: #fdf6ec; --mp-line: #eBD5ab;
+    --dead: #9ca3af;
+    --mono: "SF Mono", ui-monospace, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a; --ink: #e8e8e4; --muted: #9a9a94; --line: #34343a;
+      --till: #7aa2f7; --till-bg: #1c2536; --till-line: #33507e;
+      --mp: #e0a458; --mp-bg: #2a2118; --mp-line: #5e4526;
+      --dead: #565b66;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--mono); padding: 40px 24px 80px; }
+  .wrap { max-width: 1060px; margin: 0 auto; }
+  h1 { font-size: 21px; font-weight: 600; letter-spacing: -0.02em; }
+  .sub { color: var(--muted); margin: 6px 0 36px; font-size: 13px; }
+
+  .lanes { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 760px) { .lanes { grid-template-columns: 1fr; } }
+  .lane { border: 1.5px solid var(--line); border-radius: 10px; padding: 18px; }
+  .lane.till { border-color: var(--till-line); background: var(--till-bg); }
+  .lane.mp   { border-color: var(--mp-line);  background: var(--mp-bg); }
+  .lane h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+  .lane.till h2 { color: var(--till); } .lane.mp h2 { color: var(--mp); }
+  .lane .who { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+
+  .box { background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 10px 12px; margin-bottom: 10px; }
+  .box b { font-size: 13.5px; display: block; }
+  .box .d { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .box .path { font-size: 11px; color: var(--muted); opacity: .85; }
+  .del { display: inline-block; font-size: 10.5px; border: 1px solid var(--till-line); color: var(--till);
+         border-radius: 99px; padding: 0 7px; margin-top: 5px; }
+  .lane.mp .del { border-color: var(--mp-line); color: var(--mp); }
+
+  .plan { border: 1.5px solid var(--till-line); border-radius: 7px; overflow: hidden; margin-bottom: 10px; background: var(--bg); }
+  .plan .row { padding: 8px 12px; border-bottom: 1px dashed var(--line); }
+  .plan .row:last-child { border-bottom: 0; }
+  .plan b { font-size: 13px; }
+  .plan .d { font-size: 11.5px; color: var(--muted); }
+
+  .rules { margin-top: 40px; border: 1.5px solid var(--line); border-radius: 10px; padding: 18px; }
+  .rules h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 14px; }
+  .flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; font-size: 12.5px; }
+  .step { border: 1px solid var(--line); border-radius: 7px; padding: 8px 11px; background: var(--bg); flex: 1 1 130px; min-width: 130px; }
+  .step .t { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .step.till { border-color: var(--till-line); } .step.till .t { color: var(--till); }
+  .step.mp   { border-color: var(--mp-line); }  .step.mp .t   { color: var(--mp); }
+  .arr { align-self: center; color: var(--muted); flex: 0 0 auto; }
+
+  .chan { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; font-size: 12px; }
+  @media (max-width: 760px) { .chan { grid-template-columns: 1fr 1fr; } }
+  .chan .c { border: 1px solid var(--line); border-radius: 7px; padding: 8px 11px; background: var(--bg); }
+  .chan .c .t { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); display: block; }
+  .chan .c .ex { color: var(--muted); font-size: 11px; }
+
+  .foot { margin-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 12.5px; }
+  @media (max-width: 760px) { .foot { grid-template-columns: 1fr; } }
+  .foot .cell { border-top: 1px solid var(--line); padding-top: 10px; color: var(--muted); }
+  .foot b { color: var(--ink); }
+  .dead { text-decoration: line-through; color: var(--dead); }
+  .legend { margin-top: 26px; font-size: 11.5px; color: var(--muted); }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin: 0 5px 0 14px; vertical-align: baseline; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Tills State-System</h1>
+  <p class="sub">Stand 2026-07-12 (v2) · Dein PLAN-Hub + Updating-Rules docken an die Matt-Pocock-Struktur an · Regel: jede State-Surface hat <b>einen Leser, eine Frage, einen Deletion Moment</b> (§24)</p>
+
+  <div class="lanes">
+    <div class="lane till">
+      <h2>Dein System — State &amp; Rules</h2>
+      <div class="who">selbst gebaut · global + projektlokal · seit 2026-07-12</div>
+
+      <div class="plan">
+        <div class="row"><b>PLAN.md</b> <span class="d">(Repo-Root — der Hub, für Till <i>und</i> AI)</span></div>
+        <div class="row"><b>1 · Roadmap-lite</b><div class="d">3–5 Zeilen: aktuelle Wette + Sequenz — Altitude zuerst (§25)</div></div>
+        <div class="row"><b>2 · Offen — bei Till</b><div class="d">deine Entscheidungen/Aktionen · <u>löschen sobald entschieden</u></div></div>
+        <div class="row"><b>3 · Offen — bei AI</b><div class="d">nur Pointer auf die Issue-Queue →</div></div>
+        <div class="row"><b>4 · Aktiver Task</b><div class="d">AI-Arbeitsstand · bei Done leeren + Issue schließen →</div></div>
+      </div>
+
+      <div class="box"><b>Updating-Rules (kodiert, nicht gemerkt)</b>
+        <div class="d">End-of-task: Issue schließen (Label + Outcome-Note) · Entscheidung → ADR · wartet auf Till → „Offen — bei Till“ · <b>git history = Changelog</b></div>
+        <div class="path">Projekt-CLAUDE.md + globale CLAUDE.md</div>
+      </div>
+
+      <div class="box"><b>Skills — eigenes Repo: Tvk-sd/pm-skills</b>
+        <div class="d">aktiv: project-setup v3.0.0 (scaffoldet PLAN) · project-resume v2.0.0 (liest PLAN, Legacy-Fallback)<br>
+        <span class="dead">conductor</span> + <span class="dead">project-handoff</span> → <span style="font-family:var(--mono)">_deprecated/</span> (2026-07-12, statt Migration — kein Nutzer mehr, §24 auf Skills)</div>
+        <div class="path">~/.claude/skills/user/ (in ~/.claude gitignored — eigene Historie!)</div>
+      </div>
+
+      <div class="box"><b class="dead">PROJECT-TRACKER.md</b> <b class="dead" style="display:inline">+ HANDOFF.md</b>
+        <div class="d">beide retired → <span style="font-family:var(--mono)">context/archive/</span> — Tracker: zwei Jobs, kein Deletion Moment · HANDOFF: stale seit 2026-06-26</div>
+      </div>
+    </div>
+
+    <div class="lane mp">
+      <h2>Matt-Pocock-Struktur — wo Arbeit schließt</h2>
+      <div class="who">importierte Konvention · projektlokal · docs/agents/</div>
+
+      <div class="box"><b>Issue-Tracker — Backend konfigurierbar</b>
+        <div class="d">Pococks Setup-Skill kennt <b>GitHub / Linear / lokale Files</b> — hier bewusst <b>local-files</b> gewählt (solo, AFK-Worktree-Agents, Issue schließt im selben Commit).<br>Linear-Trigger: Multi-Projekt-Sicht · Kollaborateure · Mobile-Triage</div>
+        <div class="path">.scratch/&lt;feature&gt;/PRD.md · issues/NN-titel.md · docs/agents/issue-tracker.md</div>
+        <span class="del">Deletion Moment: Issue geschlossen (Outcome-Note + Commit-Hash)</span>
+      </div>
+
+      <div class="box"><b>Triage-Labels (5 Rollen)</b>
+        <div class="d">needs-triage → needs-info · <b>ready-for-agent</b> (= AI-Queue) · <b>ready-for-human</b> (= Till-Queue für Code-Sachen) · wontfix</div>
+        <div class="path">docs/agents/triage-labels.md</div>
+      </div>
+
+      <div class="box"><b>Domain-Docs</b>
+        <div class="d">CONTEXT.md = eine Domänensprache fürs ganze Repo · ADRs = Entscheidungen mit Begründung (auch wontfix, z.&nbsp;B. ADR 0005)</div>
+        <div class="path">CONTEXT.md (Root) · docs/adr/ · docs/agents/domain.md</div>
+        <span class="del">ADRs: bewusst append-only — Entscheidungs-Historie</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="rules">
+    <h2>Lebenszyklus eines Tasks — so greifen beide Systeme ineinander</h2>
+    <div class="flow">
+      <div class="step mp"><span class="t">Idee / Bug</span>Issue anlegen<br>→ needs-triage</div>
+      <div class="arr">→</div>
+      <div class="step mp"><span class="t">Triage</span>ready-for-agent<br><span style="color:var(--muted)">oder ready-for-human / wontfix→ADR</span></div>
+      <div class="arr">→</div>
+      <div class="step till"><span class="t">PLAN.md</span>Offen — bei AI<br>zeigt auf die Queue</div>
+      <div class="arr">→</div>
+      <div class="step till"><span class="t">Arbeit</span>Aktiver Task<br>(eigener Worktree)</div>
+      <div class="arr">→</div>
+      <div class="step mp"><span class="t">Done</span>Issue schließen: Outcome + Commit · Entscheidung → ADR</div>
+      <div class="arr">→</div>
+      <div class="step till"><span class="t">Rest auf Till?</span>Zeile in „Offen — bei Till“<br><span style="color:var(--muted)">löschen wenn entschieden</span></div>
+    </div>
+  </div>
+
+  <div class="rules">
+    <h2>Provenienz — die 4 Kanäle, über die Dateien &amp; Konventionen entstehen</h2>
+    <div class="chan">
+      <div class="c"><span class="t">1 · Command</span>explizit gezogen<br><span class="ex">/to-issues, /triage, /project-setup</span></div>
+      <div class="c"><span class="t">2 · Passiv</span>CLAUDE.md immer geladen<br><span class="ex">globale Rules (PLAN, HANDOFF) · Projekt-CLAUDE.md → docs/agents/*</span></div>
+      <div class="c"><span class="t">3 · Auto-Trigger</span>Description-Matching<br><span class="ex">impeccable → .impeccable/</span></div>
+      <div class="c"><span class="t">4 · Ad-hoc</span>Session-Urteil, keine Konvention<br><span class="ex">PRODUCT.md, DESIGN.md, context/-Doc-Namen — ggf. per CLAUDE.md-Zeile zur Konvention befördern</span></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="cell"><b>Was NICHT mehr passiert:</b> Outcomes in einen Tracker/Changelog appenden · State-Docs ohne Deletion Moment · Till-Aufgaben nur im Chat oder Worktree-lokal · Skills pflegen, die niemand mehr nutzt</div>
+    <div class="cell"><b>Offene Kanten:</b> project-setup scaffoldet den MP-Issue-Tracker (noch) nicht mit — frische Projekte schließen Outcomes via Commit-Message · pm-skills-Repo: Deprecation + v3/v2 uncommitted (+ ältere Änderungen)</div>
+  </div>
+
+  <div class="legend">
+    Legende: <span class="dot" style="background:var(--till)"></span>dein System (PLAN + Rules + Skills) <span class="dot" style="background:var(--mp)"></span>Matt-Pocock-Struktur (Issues + Labels + Domain-Docs) · Quelle der §-Referenzen: Diptychon <span style="font-family:var(--mono)">context/transferable-learnings.md</span>
+  </div>
+</div>
+</body>
+</html>
