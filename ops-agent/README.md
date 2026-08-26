@@ -109,7 +109,7 @@ Edit `ops-agent/config.json`:
   },
   "status": {
     "trackedDocs": [                 // docs listed in every report
-      "infrastructure-status-v1.1.md"
+      "reports/infrastructure-status-v1.1.md"
     ]
   }
 }
